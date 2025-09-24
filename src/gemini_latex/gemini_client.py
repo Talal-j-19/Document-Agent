@@ -25,7 +25,19 @@ class GeminiClient:
             raise ValueError("GEMINI_API_KEY must be provided either as parameter or environment variable")
         
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+
+        # Choose model name: prefer env var GEMINI_MODEL, default to a current stable model
+        model_name = os.getenv("GEMINI_MODEL") or "gemini-2.5-flash"
+        try:
+            self.model = genai.GenerativeModel(model_name)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize model '{model_name}': {e}")
+        
+        # Configure request timeout (seconds), default 120; override with GEMINI_REQUEST_TIMEOUT
+        try:
+            self.request_timeout = int(os.getenv("GEMINI_REQUEST_TIMEOUT", "120"))
+        except ValueError:
+            self.request_timeout = 120
     
     def generate_latex(self, prompt: str, context: Optional[str] = None) -> str:
         """
@@ -44,10 +56,25 @@ You are an expert LaTeX document generator. Generate clean, well-structured LaTe
 Rules:
 1. Always include proper document class and necessary packages
 2. Use appropriate LaTeX commands and environments
-3. Ensure the code is compilable with pdflatex
+3. Ensure the code is compilable with pdflatex, xelatex, or lualatex
 4. Include proper formatting and structure
 5. Only return the LaTeX code, no explanations or markdown formatting
 6. Start with \\documentclass and end with \\end{document}
+
+Compatibility Guidelines:
+- For CV/Resume documents: Use standard document classes (article, report) instead of moderncv if there might be compatibility issues
+- Avoid undefined control sequences - only use commands from included packages
+- For font issues: Include appropriate font packages and avoid microtype with problematic fonts
+- Use standard packages: geometry, hyperref, xcolor, enumitem, graphicx
+- When using moderncv: Avoid custom commands like \\makecvfootertopskip, use standard spacing commands
+- For modern styling: Use xcolor for colors, geometry for margins, custom commands for formatting
+- Test compatibility: Prefer widely supported packages over specialized ones
+
+For CV documents specifically:
+- If using moderncv, use only well-established commands
+- Alternative: Use article class with custom formatting for better compatibility
+- Include proper font encoding: \\usepackage[T1]{fontenc} and \\usepackage[utf8]{inputenc}
+- Avoid problematic font expansion by using standard fonts
 """
         
         full_prompt = system_prompt
@@ -56,7 +83,10 @@ Rules:
         full_prompt += f"\n\nUser request: {prompt}"
         
         try:
-            response = self.model.generate_content(full_prompt)
+            response = self.model.generate_content(
+                full_prompt,
+                request_options={"timeout": self.request_timeout}
+            )
             return response.text.strip()
         except Exception as e:
             raise RuntimeError(f"Failed to generate LaTeX code: {str(e)}")

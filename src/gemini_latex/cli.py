@@ -196,6 +196,140 @@ def check():
         console.print(f"❌ LaTeX check failed: {str(e)}")
 
 
+@cli.command(name="edit")
+@click.argument('prompt', type=str)
+@click.option('--document-name', '-n', type=str, help='Name for the document')
+@click.option('--context', '-c', type=str, help='Additional context for generation')
+@click.option('--engine', '-e', default='pdflatex', help='LaTeX engine to use')
+@click.option('--session-dir', type=str, default='sessions', help='Directory for editing sessions')
+@click.option('--api-key', type=str, help='Gemini API key (overrides environment variable)')
+def interactive_edit(prompt: str, document_name: Optional[str], context: Optional[str], 
+                   engine: str, session_dir: str, api_key: Optional[str]):
+    """Start an interactive editing session for a new document."""
+    
+    try:
+        from .interactive_session import InteractiveSession
+        
+        processor = GeminiLaTeXProcessor(
+            api_key=api_key,
+            latex_engine=engine,
+            default_output_dir="output"
+        )
+        
+        interactive_session = InteractiveSession(processor, session_dir)
+        
+        result = interactive_session.start_interactive_editing(
+            prompt=prompt,
+            document_name=document_name,
+            context=context
+        )
+        
+        if result["success"]:
+            console.print(Panel.fit("🎉 Interactive editing session completed successfully!", style="bold green"))
+            console.print(f"📋 Final PDF: {result['final_pdf']}")
+            console.print(f"📝 Session ID: {result['session_id']}")
+        else:
+            console.print(Panel.fit(f"❌ Error: {result['error']}", style="bold red"))
+            
+    except Exception as e:
+        console.print(Panel.fit(f"❌ Unexpected error: {str(e)}", style="bold red"))
+
+
+@cli.command(name="resume")
+@click.argument('session_id', type=str)
+@click.option('--session-dir', type=str, default='sessions', help='Directory for editing sessions')
+@click.option('--engine', '-e', default='pdflatex', help='LaTeX engine to use')
+@click.option('--api-key', type=str, help='Gemini API key (overrides environment variable)')
+def resume_session(session_id: str, session_dir: str, engine: str, api_key: Optional[str]):
+    """Resume an existing interactive editing session."""
+    
+    try:
+        from .interactive_session import InteractiveSession
+        
+        processor = GeminiLaTeXProcessor(
+            api_key=api_key,
+            latex_engine=engine,
+            default_output_dir="output"
+        )
+        
+        interactive_session = InteractiveSession(processor, session_dir)
+        
+        result = interactive_session.resume_session(session_id)
+        
+        if result["success"]:
+            console.print(Panel.fit("🎉 Interactive editing session completed successfully!", style="bold green"))
+            console.print(f"📋 Final PDF: {result['final_pdf']}")
+            console.print(f"📝 Session ID: {result['session_id']}")
+        else:
+            console.print(Panel.fit(f"❌ Error: {result['error']}", style="bold red"))
+            
+    except Exception as e:
+        console.print(Panel.fit(f"❌ Unexpected error: {str(e)}", style="bold red"))
+
+
+@cli.command(name="sessions")
+@click.option('--session-dir', type=str, default='sessions', help='Directory for editing sessions')
+@click.option('--api-key', type=str, help='Gemini API key (overrides environment variable)')
+def list_sessions(session_dir: str, api_key: Optional[str]):
+    """List all available interactive editing sessions."""
+    
+    try:
+        from .interactive_session import InteractiveSession
+        
+        processor = GeminiLaTeXProcessor(
+            api_key=api_key,
+            latex_engine="pdflatex",  # Engine doesn't matter for listing
+            default_output_dir="output"
+        )
+        
+        interactive_session = InteractiveSession(processor, session_dir)
+        interactive_session.list_sessions()
+        
+    except Exception as e:
+        console.print(Panel.fit(f"❌ Error: {str(e)}", style="bold red"))
+
+
+@cli.command(name="session-info")
+@click.argument('session_id', type=str)
+@click.option('--session-dir', type=str, default='sessions', help='Directory for editing sessions')
+@click.option('--api-key', type=str, help='Gemini API key (overrides environment variable)')
+def session_info(session_id: str, session_dir: str, api_key: Optional[str]):
+    """Show detailed information about an editing session."""
+    
+    try:
+        from .interactive_session import InteractiveSession
+        
+        processor = GeminiLaTeXProcessor(
+            api_key=api_key,
+            latex_engine="pdflatex",  # Engine doesn't matter for info
+            default_output_dir="output"
+        )
+        
+        interactive_session = InteractiveSession(processor, session_dir)
+        result = interactive_session.get_session_info(session_id)
+        
+        if result["success"]:
+            session_data = result["session_data"]
+            versions = result["version_history"]
+            
+            console.print(f"\n[bold]Session Information[/bold]")
+            console.print(f"Session ID: {session_data['session_id']}")
+            console.print(f"Document Name: {session_data['document_name']}")
+            console.print(f"Created: {session_data['created_at']}")
+            console.print(f"Current Version: {session_data['current_version']}")
+            console.print(f"Total Versions: {len(versions)}")
+            console.print(f"Original Prompt: {session_data['original_prompt']}")
+            
+            console.print(f"\n[bold]Version History:[/bold]")
+            for version in versions:
+                console.print(f"  v{version['version']}: {version['change_description']} ({version['timestamp']})")
+        else:
+            console.print(Panel.fit(f"❌ Error: {result['error']}", style="bold red"))
+            
+    except Exception as e:
+        console.print(Panel.fit(f"❌ Error: {str(e)}", style="bold red"))
+
+
 def main():
     """Entry point for the CLI."""
     cli()
