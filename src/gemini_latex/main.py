@@ -80,6 +80,14 @@ class GeminiLaTeXProcessor:
             with open(tex_file, 'w', encoding='utf-8') as f:
                 f.write(latex_code)
         
+        # --- ENGINE AUTO-SELECTION FOR ALTACV ---
+        engine_to_use = self.latex_compiler.latex_engine
+        if "\\documentclass" in latex_code and "altacv" in latex_code:
+            if engine_to_use != "xelatex":
+                # Switch to xelatex for altacv
+                from .latex_compiler import LaTeXCompiler
+                self.latex_compiler = LaTeXCompiler("xelatex")
+                engine_to_use = "xelatex"
         # Compile to PDF with intelligent retry
         compilation_attempt = 1
         max_attempts = 2 if retry_on_error else 1
@@ -117,7 +125,6 @@ class GeminiLaTeXProcessor:
                     # Regenerate LaTeX code with error context
                     try:
                         latex_code = self.gemini_client.generate_latex(prompt, enhanced_context)
-                        
                         # Save the updated LaTeX code if requested
                         if save_tex:
                             with open(tex_file, 'w', encoding='utf-8') as f:

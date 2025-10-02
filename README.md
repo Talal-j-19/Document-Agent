@@ -208,3 +208,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Google's Gemini AI for document generation
 - The LaTeX community for the typesetting system
 - Python packaging community for the tools and libraries
+
+# Have to install altacv from github and save it in C:\Users\<YourName>\AppData\Roaming\MiKTeX\tex\latex\altacv

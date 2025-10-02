@@ -39,9 +39,8 @@ class GeminiClient:
         except ValueError:
             self.request_timeout = 120
 
-    # Modern, professional LaTeX CV system prompt
-    system_prompt = (
-        """
+        self.system_prompt = (
+            """
 You are an expert LaTeX document generator. Generate clean, professional, and modern LaTeX code based on the user's requirements.
 
 Rules:
@@ -54,7 +53,8 @@ Rules:
 
 Guidelines for Modern CVs:
 - If the user requests a modern or professional CV, use a modern LaTeX class such as moderncv or altacv, and select a suitable style (e.g., 'banking', 'classic', 'casual', etc. for moderncv).
-- Always include all required \\usepackage and \\moderncvstyle or \\moderncvcolor commands, and ensure the document compiles without missing dependencies.
+- If the user requests a two-column, highly modern, or colorful CV, or specifically mentions 'altacv', use the altacv class/template. For altacv, include all required packages, use the sidebar, color highlights, and icons as appropriate, and follow altacv's documentation for structure and commands.
+- Always include all required \\usepackage and \\moderncvstyle or \\moderncvcolor commands for moderncv, and ensure the document compiles without missing dependencies.
 - For altacv, include the altacv class and all required packages, and use the sidebar and color features as appropriate.
 - Add sections for profile, skills, experience, education, projects, and contact info, using icons and color if supported by the template.
 - If a profile photo or other external object is requested, DO NOT include an explicit LaTeX command (such as \\photo or \\includegraphics) in the code by default. Instead, add a clear placeholder comment in the code (e.g., '% Photo placeholder: add \\photo[80pt]{photo.jpg} here if available'). This prevents compilation errors if the file is missing. The actual reference can be added later in editing mode when the user provides the file.
@@ -64,7 +64,7 @@ Guidelines for Modern CVs:
 - Include proper font encoding: \\usepackage[T1]{fontenc} and \\usepackage[utf8]{inputenc} if not already included by the template.
 - For best compatibility, avoid microtype unless required, and use standard fonts.
 """
-    )
+        )
     
     def generate_latex(self, prompt: str, context: Optional[str] = None) -> str:
         """
